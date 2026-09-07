@@ -1,0 +1,3 @@
+# Python 3.12 is the supported project runtime (also used by Docker).
+# Python 3.13 compatibility requires upgrading SQLAlchemy beyond the pinned 2.0.28.
+target-version = "py312"

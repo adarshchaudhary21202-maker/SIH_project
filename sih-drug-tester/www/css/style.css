@@ -1,0 +1,224 @@
+/* Modern Clinical Design System Tokens & Custom Styling */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+    --primary-slate: #0F172A;
+    --navy-surface: #1E293B;
+    --clinical-teal: #0D9488;
+    --clinical-teal-light: #F0FDFA;
+    --clinical-bg: #F8FAFC;
+    --clinical-card: #FFFFFF;
+    --clinical-border: #E2E8F0;
+    --status-safe-bg: #ECFDF5;
+    --status-safe-text: #065F46;
+    --status-safe-border: #A7F3D0;
+    --status-alert-bg: #FEF2F2;
+    --status-alert-text: #991B1B;
+    --status-alert-border: #FECACA;
+    --status-warn-bg: #FFFBEB;
+    --status-warn-text: #92400E;
+    --status-warn-border: #FDE68A;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Subtle modern scrollbar */
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+}
+
+/* Tactile micro-interactions for buttons */
+button, [role="button"] {
+    transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+button:active:not(:disabled), [role="button"]:active:not(:disabled) {
+    transform: scale(0.975);
+}
+
+/* Mobile device frame simulation for desktop view */
+@media (min-width: 640px) {
+    .mobile-screen-shell {
+        box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(15, 23, 42, 0.08);
+        border-radius: 2.25rem;
+    }
+}
+
+/* Optical scanner viewfinder grid and sweep line */
+.scanner-crosshair {
+    background: 
+        linear-gradient(to right, rgba(13, 148, 136, 0.7) 2px, transparent 2px) 0 0,
+        linear-gradient(to bottom, rgba(13, 148, 136, 0.7) 2px, transparent 2px) 0 0,
+        linear-gradient(to left, rgba(13, 148, 136, 0.7) 2px, transparent 2px) 100% 0,
+        linear-gradient(to bottom, rgba(13, 148, 136, 0.7) 2px, transparent 2px) 100% 0,
+        linear-gradient(to right, rgba(13, 148, 136, 0.7) 2px, transparent 2px) 0 100%,
+        linear-gradient(to top, rgba(13, 148, 136, 0.7) 2px, transparent 2px) 0 100%,
+        linear-gradient(to left, rgba(13, 148, 136, 0.7) 2px, transparent 2px) 100% 100%,
+        linear-gradient(to top, rgba(13, 148, 136, 0.7) 2px, transparent 2px) 100% 100%;
+    background-repeat: no-repeat;
+    background-size: 16px 16px;
+}
+
+@keyframes laser-sweep {
+    0% {
+        top: 0%;
+        opacity: 0.2;
+    }
+    50% {
+        opacity: 0.9;
+    }
+    100% {
+        top: 96%;
+        opacity: 0.2;
+    }
+}
+
+.laser-line {
+    animation: laser-sweep 2.4s ease-in-out infinite alternate;
+}
+
+/* Card soft shadows */
+.card-clinical {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 1rem;
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-clinical:hover {
+    box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.07), 0 2px 8px -1px rgba(15, 23, 42, 0.04);
+}
+
+/* Ensure video preview maintains proper aspect ratio on mobile devices */
+video {
+    transform: scaleX(1);
+    object-fit: cover;
+}
+
+/* Subtle focus ring */
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #0D9488 !important;
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15) !important;
+}
+
+/* Safe area bottom clearance to prevent elements from hiding behind phone navigation buttons */
+:root {
+    --safe-bottom-inset: env(safe-area-inset-bottom, 24px);
+}
+
+.safe-bottom-clearance {
+    padding-bottom: max(6.5rem, calc(env(safe-area-inset-bottom, 24px) + 5rem)) !important;
+}
+
+.safe-bottom-action-bar {
+    padding-bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 24px) + 0.75rem)) !important;
+}
+
+/* Highlighted GPS tactical glowing card */
+.highlighted-gps-card {
+    background: linear-gradient(135deg, #0F172A 0%, #132438 100%);
+    border: 1.5px solid rgba(16, 185, 129, 0.45);
+    box-shadow: 0 0 20px -3px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.gps-radar-dot {
+    box-shadow: 0 0 10px #10B981, 0 0 20px #10B981;
+}
+
+/* Dual capture reticles */
+.reticle-color-card {
+    border: 2px dashed #14B8A6;
+    background: rgba(20, 184, 166, 0.08);
+}
+
+.reticle-test-tube {
+    border: 2px dashed #F59E0B;
+    background: rgba(245, 158, 11, 0.08);
+}
+
+/* Circular Progress Animation */
+.circular-progress-svg {
+    transform: rotate(-90deg);
+}
+
+.circular-progress-circle-bg {
+    stroke: #334155;
+}
+
+.circular-progress-circle-bar {
+    stroke: #14B8A6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.15s ease-out;
+    filter: drop-shadow(0 0 6px rgba(20, 184, 166, 0.6));
+}
+
+/* Success Tick Mark Pop-up animation */
+@keyframes checkmarkDraw {
+    0% {
+        stroke-dashoffset: 48;
+        opacity: 0;
+    }
+    100% {
+        stroke-dashoffset: 0;
+        opacity: 1;
+    }
+}
+
+@keyframes popInBounce {
+    0% {
+        opacity: 0;
+        transform: scale(0.65);
+    }
+    70% {
+        transform: scale(1.08);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-pop-in {
+    animation: popInBounce 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.animate-checkmark-path {
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    animation: checkmarkDraw 0.6s cubic-bezier(0.65, 0, 0.45, 1) 0.2s forwards;
+}
+
+/* Metric count bump animation */
+@keyframes metricPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.25); color: #10B981; }
+    100% { transform: scale(1); }
+}
+
+.metric-bump {
+    animation: metricPulse 0.6s ease-in-out;
+}
