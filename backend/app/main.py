@@ -4,8 +4,9 @@ from fastapi import FastAPI, Depends, HTTPException, Request, status, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import Response
-from pydantic import BaseModel, Field
-from sqlalchemy import select, func, update
+from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import select, func, update, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 import base64, jwt
@@ -23,6 +24,37 @@ ai_service = load_service(settings.AI_DEMO_MODE, settings.AI_DEMO_PROFILE)
 app.add_middleware(CORSMiddleware, allow_origins=settings.CORS_ORIGINS, allow_credentials=True, allow_methods=['*'], allow_headers=['*'])
 bearer = HTTPBearer()
 class Login(BaseModel): badge_id:str; password:str; device_id:str='unknown'; device_name:str|None=None
+class Register(BaseModel):
+ full_name: str = Field(min_length=2, max_length=100)
+ email: str = Field(min_length=3, max_length=254)
+ badge_id: str = Field(min_length=3, max_length=50)
+ password: str = Field(min_length=12, max_length=128)
+ role: str = 'OFFICER'
+ @field_validator('full_name', 'badge_id', 'email', mode='before')
+ @classmethod
+ def strip_text(cls, value): return value.strip() if isinstance(value, str) else value
+ @field_validator('email')
+ @classmethod
+ def valid_email(cls, value):
+  value = value.lower()
+  if '@' not in value or value.startswith('@') or value.endswith('@') or any(char.isspace() for char in value): raise ValueError('Enter a valid email address.')
+  return value
+ @field_validator('badge_id')
+ @classmethod
+ def valid_badge_id(cls, value):
+  if any(char.isspace() for char in value): raise ValueError('Badge ID cannot contain spaces.')
+  return value
+ @field_validator('password')
+ @classmethod
+ def strong_password(cls, value):
+  if not any(char.isalpha() for char in value) or not any(char.isdigit() for char in value): raise ValueError('Password must include letters and numbers.')
+  return value
+ @field_validator('role')
+ @classmethod
+ def allowed_registration_role(cls, value):
+  value = value.upper()
+  if value not in {'OFFICER', 'SUPERVISOR'}: raise ValueError('Role must be OFFICER or SUPERVISOR.')
+  return value
 class OTP(BaseModel): badge_id:str; otp:str=Field(min_length=6,max_length=6); device_id:str='unknown'
 class Refresh(BaseModel): refresh_token:str
 class CaseIn(BaseModel): case_number:str; title:str; description:str|None=None
@@ -66,15 +98,26 @@ async def analyze_image(image: UploadFile = File(...)):
  return ai_service.analyze_image(await image.read())
 @app.post('/auth/login',status_code=202)
 async def login(body:Login,request:Request,db:AsyncSession=Depends(get_db)):
- user=(await db.execute(select(User).where(User.badge_id==body.badge_id))).scalar_one_or_none()
+ identifier=body.badge_id.strip()
+ user=(await db.execute(select(User).where(or_(User.badge_id==identifier, User.email==identifier.lower())))).scalar_one_or_none()
  if not user or not verify_password(body.password,user.hashed_password) or user.account_status!='ACTIVE': raise HTTPException(401,'Invalid credentials')
  code=f'{secrets.randbelow(1000000):06d}'; now=datetime.utcnow(); await db.execute(update(OTPVerification).where(OTPVerification.badge_id==user.badge_id).values(expires_at=now))
  db.add(OTPVerification(badge_id=user.badge_id,otp_hash=hash_password(code),expires_at=now+timedelta(seconds=settings.OTP_EXPIRY_SECONDS),resend_available_at=now+timedelta(seconds=settings.OTP_RESEND_COOLDOWN_SECONDS)))
  db.add(DeviceSession(badge_id=user.badge_id,device_id=body.device_id,device_name=body.device_name,ip_address=request.client.host if request.client else None))
  await log(db,user.badge_id,'OTP_ISSUED')
- response={'message':'OTP issued'}
+ response={'message':'OTP issued','badge_id':user.badge_id}
  if settings.ENVIRONMENT in ('development','testing'): response['development_otp']=code
  return response
+@app.post('/auth/register', status_code=status.HTTP_201_CREATED)
+async def register(body:Register, db:AsyncSession=Depends(get_db)):
+ duplicate=(await db.execute(select(User).where(or_(User.badge_id==body.badge_id, User.email==body.email)))).scalar_one_or_none()
+ if duplicate: raise HTTPException(status.HTTP_409_CONFLICT, 'An account already exists with that email or badge ID.')
+ try:
+  user=User(badge_id=body.badge_id,email=body.email,full_name=body.full_name,role=body.role,hashed_password=hash_password(body.password))
+  db.add(user); await db.flush(); await log(db,user.badge_id,'AUTH_REGISTERED')
+ except IntegrityError:
+  await db.rollback(); raise HTTPException(status.HTTP_409_CONFLICT, 'An account already exists with that email or badge ID.')
+ return {'message':'Account created. Sign in to receive your OTP.','badge_id':user.badge_id,'email':user.email,'role':user.role}
 @app.post('/auth/verify-otp')
 async def verify(body:OTP,db:AsyncSession=Depends(get_db)):
  otp=(await db.execute(select(OTPVerification).where(OTPVerification.badge_id==body.badge_id, OTPVerification.expires_at>=datetime.utcnow()).order_by(OTPVerification.created_at.desc()))).scalars().first()
@@ -182,8 +225,6 @@ async def transfer(evidence_id:uuid.UUID,body:CustodyIn,user:User=Depends(roles(
  item=await db.get(EvidenceRecord,evidence_id)
  if not item: raise HTTPException(404,'Evidence not found')
  event=ChainOfCustodyEvent(evidence_id=item.id,from_user_badge_id=user.badge_id,to_user_badge_id=body.to_user_badge_id,location=body.location,reason=body.reason,authorization_reference=body.authorization_reference); db.add(event); await log(db,user.badge_id,'CUSTODY_TRANSFER',item.id,reason=body.reason); return {'id':event.id}
-
-
 
 
 

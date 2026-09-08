@@ -14,11 +14,12 @@ async def main():
             if not (await db.execute(select(Role).where(Role.name==name))).scalar_one_or_none(): db.add(Role(name=name))
         await db.flush()
         for badge, full_name, role in USERS:
-            if not (await db.execute(select(User).where(User.badge_id==badge))).scalar_one_or_none(): db.add(User(badge_id=badge,full_name=full_name,role=role,hashed_password=hash_password(DEVELOPMENT_PASSWORD)))
+            user=(await db.execute(select(User).where(User.badge_id==badge))).scalar_one_or_none()
+            if not user: db.add(User(badge_id=badge,email=badge,full_name=full_name,role=role,hashed_password=hash_password(DEVELOPMENT_PASSWORD)))
+            elif not user.email: user.email=badge
         if not (await db.execute(select(TestKit).where(TestKit.kit_id=='DEV-KIT-001'))).scalar_one_or_none():
             from datetime import datetime, timedelta
             db.add(TestKit(kit_id='DEV-KIT-001',batch_number='DEV-BATCH',manufacturing_date=datetime.utcnow(),expiry_date=datetime.utcnow()+timedelta(days=365),reagent_information='Development kit'))
         await db.commit()
     print('Seeded development users. Password:', DEVELOPMENT_PASSWORD)
 if __name__ == '__main__': asyncio.run(main())
-

@@ -57,6 +57,19 @@ def test_openapi_swagger_and_unauthorized_requests(client):
     assert client.get('/auth/me', headers={'Authorization': 'Bearer invalid'}).status_code == 401
     assert client.get('/auth/me', headers={'Authorization': 'Bearer ' + 'x.y.z'}).status_code == 401
 
+def test_registration_duplicate_credentials_and_otp_login(client):
+    registration = {'full_name': 'New Officer', 'email': 'new.officer@example.local', 'badge_id': 'NCB-NEW-001', 'password': 'SecurePass2026', 'role': 'OFFICER'}
+    created = client.post('/auth/register', json=registration)
+    assert created.status_code == 201
+    assert created.json()['badge_id'] == registration['badge_id']
+    assert client.post('/auth/register', json=registration).status_code == 409
+    assert client.post('/auth/register', json={**registration, 'email': 'other@example.local'}).status_code == 409
+    assert client.post('/auth/login', json={'badge_id': registration['email'], 'password': 'wrong', 'device_id': 'test-device'}).status_code == 401
+    pending = client.post('/auth/login', json={'badge_id': registration['email'], 'password': registration['password'], 'device_id': 'test-device'})
+    assert pending.status_code == 202
+    verified = client.post('/auth/verify-otp', json={'badge_id': registration['badge_id'], 'otp': pending.json()['development_otp'], 'device_id': 'test-device'})
+    assert verified.status_code == 200
+
 def test_auth_otp_resend_limits_expiry_and_token_lifecycle(client):
     assert client.post('/auth/login', json={'badge_id': 'officer@example.local', 'password': 'wrong'}).status_code == 401
     pending = login(client, 'officer@example.local')
@@ -147,6 +160,5 @@ def test_corrections_versions_and_chain_of_custody_integrity(client):
     assert client.post(f'/supervisor/corrections/{second.json()["id"]}/reject', headers=supervisor, json={'reason': 'not justified'}).json()['status'] == 'REJECTED'
     assert client.get('/supervisor/corrections', headers=supervisor).status_code == 200
     assert client.post(f'/officer/evidence/{eid}/custody', headers=supervisor, json=transfer).status_code == 200
-
 
 

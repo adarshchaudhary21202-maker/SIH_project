@@ -20,6 +20,9 @@ class User(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     badge_id: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    # Badge IDs are used as the stable authorization subject. Email is a
+    # separate, login-friendly identifier for accounts created in the UI.
+    email: Mapped[Optional[str]] = mapped_column(String(254), unique=True, index=True, nullable=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
     full_name: Mapped[str] = mapped_column(String(100))
     role: Mapped[str] = mapped_column(String(50))  # Denormalized string copy or linked via relationship
@@ -214,5 +217,4 @@ class CorrectionRequest(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     evidence: Mapped[EvidenceRecord] = relationship("EvidenceRecord", back_populates="correction_requests")
-
 

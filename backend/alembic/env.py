@@ -1,5 +1,11 @@
+from pathlib import Path
+import sys
 from alembic import context
 from sqlalchemy import engine_from_config, pool
+
+# Alembic runs this file by path, so make the backend package importable when
+# invoked from this repository rather than requiring callers to set PYTHONPATH.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.core.config import settings
 from app.core.database import Base
 from app.models import models  # noqa: F401
@@ -16,5 +22,4 @@ def run_migrations_online():
         with context.begin_transaction(): context.run_migrations()
 if context.is_offline_mode(): run_migrations_offline()
 else: run_migrations_online()
-
 

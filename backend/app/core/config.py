@@ -4,9 +4,11 @@ from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    # Try loading from .env first, then fallback to .env.example
+    # `.env.example` is documentation only. Loading it at runtime would point a
+    # fresh local checkout at its example PostgreSQL server instead of the safe
+    # SQLite default below.
     model_config = SettingsConfigDict(
-        env_file=(".env", ".env.example"),
+        env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore"
     )
@@ -28,7 +30,9 @@ class Settings(BaseSettings):
     ED25519_PRIVATE_KEY: str = "8fcf2c51b7537b98d1a1236ea8924e2ffeb97feefc32da4ba4613abce9a3a789"
     ED25519_PUBLIC_KEY: str = "f782ba984a9c80d19992efbe43665dfb1285311e5a59f1be0be73f1a0b3b4a25"
 
-    CORS_ORIGINS: Union[str, List[str]] = ["*"]
+    # Keep credentialed browser requests scoped to the local frontend origins.
+    # Deployments can override this with a comma-separated CORS_ORIGINS value.
+    CORS_ORIGINS: Union[str, List[str]] = ["http://localhost:5500", "http://127.0.0.1:5500"]
 
     ENVIRONMENT: str = "development"
     # Explicit SIH workflow/UI demo; never a substitute for controlled-data inference.
@@ -45,4 +49,3 @@ class Settings(BaseSettings):
         raise ValueError(v)
 
 settings = Settings()
-
