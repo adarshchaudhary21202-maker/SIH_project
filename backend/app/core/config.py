@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     CORS_ORIGINS: Union[str, List[str]] = ["*"]
 
     ENVIRONMENT: str = "development"
+    # Explicit SIH workflow/UI demo; never a substitute for controlled-data inference.
+    AI_DEMO_MODE: bool = True
+    AI_DEMO_PROFILE: str = "INCONCLUSIVE"
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod

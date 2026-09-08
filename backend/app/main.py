@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import hashlib, json, secrets, uuid
-from fastapi import FastAPI, Depends, HTTPException, Request, status
+from fastapi import FastAPI, Depends, HTTPException, Request, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import Response
@@ -15,8 +15,11 @@ from app.models.models import User, Role, OTPVerification, RefreshToken, DeviceS
 from app.security.password import hash_password, verify_password
 from app.security.jwt import create_access_token, create_refresh_token, decode_access_token, decode_refresh_token
 from app.qr import render_qr
+from app.ai.baseline import load_service
+from app.ai.interface import AIResult
 
 app = FastAPI(title='Digital Evidence Platform API', version='0.1.0')
+ai_service = load_service(settings.AI_DEMO_MODE, settings.AI_DEMO_PROFILE)
 app.add_middleware(CORSMiddleware, allow_origins=settings.CORS_ORIGINS, allow_credentials=True, allow_methods=['*'], allow_headers=['*'])
 bearer = HTTPBearer()
 class Login(BaseModel): badge_id:str; password:str; device_id:str='unknown'; device_name:str|None=None
@@ -55,7 +58,12 @@ async def issue(db,user):
 async def tables():
  async with engine.begin() as conn: await conn.run_sync(Base.metadata.create_all)
 @app.get('/health')
-async def health(): return {'status':'ok'}
+async def health(): return {'status':'ok', 'ai_model_version': ai_service.model_version, 'mode': 'DEMO' if settings.AI_DEMO_MODE else 'CONTROLLED_DATA_OR_FALLBACK'}
+@app.post('/ai/analyze', response_model=AIResult)
+async def analyze_image(image: UploadFile = File(...)):
+ if image.content_type not in {'image/jpeg','image/png','image/webp','image/gif','image/bmp','image/tiff'}:
+  raise HTTPException(415, 'Upload an image file.')
+ return ai_service.analyze_image(await image.read())
 @app.post('/auth/login',status_code=202)
 async def login(body:Login,request:Request,db:AsyncSession=Depends(get_db)):
  user=(await db.execute(select(User).where(User.badge_id==body.badge_id))).scalar_one_or_none()

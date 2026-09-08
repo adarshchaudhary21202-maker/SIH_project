@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Controlled test-kit image manifest row",
+  "type": "object",
+  "required": ["id", "dataset", "path", "label", "split", "capture_session", "ground_truth_source"],
+  "properties": {
+    "id": {"type": "string"},
+    "dataset": {"enum": ["chemical", "validation"]},
+    "path": {"type": "string", "pattern": "^(chemical|validation)/"},
+    "label": {"enum": ["PRESUMPTIVE_POSITIVE", "PRESUMPTIVE_NEGATIVE", "INCONCLUSIVE", "valid_test", "shirt", "wall", "tree", "random_object", "screenshot", "empty", "wrong_kit", "blurred", "bad_framing"]},
+    "split": {"enum": ["train", "validation", "test"]}, "capture_session": {"type": "string", "minLength": 1},
+    "kit_id": {"type": "string"},
+    "ground_truth_source": {"enum": ["controlled_kit_record", "validation_capture"]},
+    "device": {"type": "string"}, "lighting": {"type": "string"}, "distance_cm": {"type": "number"},
+    "angle_deg": {"type": "number"}, "exposure": {"type": "string"}, "background": {"type": "string"}, "reaction_stage": {"type": "string"}, "notes": {"type": "string"}
+  },
+  "allOf": [
+    {"if": {"properties": {"dataset": {"const": "chemical"}}}, "then": {"properties": {"label": {"enum": ["PRESUMPTIVE_POSITIVE", "PRESUMPTIVE_NEGATIVE", "INCONCLUSIVE"]}, "ground_truth_source": {"const": "controlled_kit_record"}}}},
+    {"if": {"properties": {"dataset": {"const": "validation"}}}, "then": {"properties": {"label": {"enum": ["valid_test", "shirt", "wall", "tree", "random_object", "screenshot", "empty", "wrong_kit", "blurred", "bad_framing"]}, "ground_truth_source": {"const": "validation_capture"}}}}
+  ]
+}
